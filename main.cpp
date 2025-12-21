@@ -13,53 +13,55 @@ static int FirstNonZeroInCol(const vec& Col, int PivotPos)
 }
 
 
-
-int PivotRowNum = 0;
-int PivotColumnNum = 0;
-
 Matrix RowEchlon(Matrix& ArgumentMatrix, int PivotColumnNum, int PivotRowNum)
 {
 
 	double Pivot = ArgumentMatrix.matrix[PivotRowNum][PivotColumnNum];
-	vec PivotColumn = ArgumentMatrix.getCol(PivotColumnNum);
 
 
-	if ((PivotRowNum < ArgumentMatrix.rowsize - 1) && (PivotColumnNum < ArgumentMatrix.columnsize - 1))
+	if ((PivotRowNum < ArgumentMatrix.rowsize - 1) && (PivotColumnNum < ArgumentMatrix.columnsize - 1)) // Are we in the allowed boundary ?
 	{
-		if (Matrix::isZeroCol(PivotColumn, PivotRowNum + 1) && std::abs(Pivot) < 1e-9)
-		{
-			// Go Right
 
-			PivotColumnNum += 1;
-			return RowEchlon(ArgumentMatrix, PivotColumnNum, PivotRowNum);
-		}
-		else if (std::abs(Pivot) < 1e-9)
+		if (std::abs(Pivot) < 1e-9) // Is the pivot 0?
 		{
-			// Swap
 
-			int RowUnderPivotIndex = FirstNonZeroInCol(PivotColumn, PivotRowNum);
-			vec temp = ArgumentMatrix.matrix[RowUnderPivotIndex];
-			ArgumentMatrix.matrix[RowUnderPivotIndex] = ArgumentMatrix.matrix[PivotRowNum];
-			ArgumentMatrix.matrix[PivotRowNum] = temp;
-			//ArgumentMatrix.print(); std::cout << '\n';
-			return RowEchlon(ArgumentMatrix, PivotColumnNum, PivotRowNum);
+			vec PivotColumn = ArgumentMatrix.getCol(PivotColumnNum);
+
+			if (Matrix::isZeroCol(PivotColumn, PivotRowNum + 1))  // Is the entire row of the pivot zeros?
+			{
+				// Go Right
+
+				PivotColumnNum += 1;
+				return RowEchlon(ArgumentMatrix, PivotColumnNum, PivotRowNum);
+
+			}
+			else
+			{
+				// Swap
+
+				int RowUnderPivotIndex = FirstNonZeroInCol(PivotColumn, PivotRowNum);
+				vec temp = ArgumentMatrix.matrix[RowUnderPivotIndex];
+				ArgumentMatrix.matrix[RowUnderPivotIndex] = ArgumentMatrix.matrix[PivotRowNum];
+				ArgumentMatrix.matrix[PivotRowNum] = temp;
+
+				return RowEchlon(ArgumentMatrix, PivotColumnNum, PivotRowNum);
+			}
+
 		}
 		else
 		{
 			// Eleminate
 
-			vec PivotRow = ArgumentMatrix.getRow(PivotRowNum);
+			for (int i = 0; i < ArgumentMatrix.rowsize - 1 - PivotRowNum; i++)
+			{
+				double Multipiler = ArgumentMatrix.matrix[PivotRowNum + 1 + i][PivotColumnNum] / Pivot;
 
-			for (int i = 0; i < ArgumentMatrix.rowsize - 1 - PivotRowNum; i++) {
-
-				vec RowUnderPivot = ArgumentMatrix.getRow(i + 1 + PivotRowNum);
-				double Multipiler = RowUnderPivot[PivotColumnNum] / Pivot;
-				vec SubtractorRow = Matrix::rowConstantMul(PivotRow, Multipiler);
-				vec FinalRow = Matrix::subtRow(RowUnderPivot, SubtractorRow);
-				ArgumentMatrix.matrix[i + 1 + PivotRowNum] = FinalRow;
+				for (int j = 0; j < ArgumentMatrix.columnsize; j++)
+				{
+					ArgumentMatrix.matrix[PivotRowNum + 1 + i][j] -= ArgumentMatrix.matrix[PivotRowNum][j] * Multipiler;
+				}
 
 			}
-			//ArgumentMatrix.print(); std::cout << '\n';
 			PivotRowNum++;
 			PivotColumnNum++;
 			return RowEchlon(ArgumentMatrix, PivotColumnNum, PivotRowNum);
@@ -97,60 +99,66 @@ int main() {
 	// ---------------------------------------------------------------------------------------------------------------------------------------------
 
 
-	auto start = std::chrono::high_resolution_clock::now();
+		//auto start = std::chrono::high_resolution_clock::now();
 
 	// ---------------------------------------------------------PRINTING TEST MATRICES BEFOUR AND AFTER RowEchlon-----------------------------------
 
-	std::cout << "\n================================\n";
+		/*std::cout << "\n================================\n";
 
-	std::cout << "Test Case 1: Infinite Solutions\n";
-	std::cout << "================================\n";
-	InfManyproblem.print();
-	std::cout << "\nAfter Gaussian Elimination:\n";
-	std::cout << "----------------------------\n";
-	RowEchlon(InfManyproblem, PivotColumnNum, PivotRowNum).print();
+		std::cout << "Test Case 1: Infinite Solutions\n";
+		std::cout << "================================\n";
+		InfManyproblem.print();
+		std::cout << "\nAfter Gaussian Elimination:\n";
+		std::cout << "----------------------------\n";
+		RowEchlon(InfManyproblem, 0, 0).print();
 
-	std::cout << "\n\n================================\n";
-	std::cout << "Test Case 2: No Solution\n";
-	std::cout << "================================\n";
-	NoSolProblem.print();
-	std::cout << "\nAfter Gaussian Elimination:\n";
-	std::cout << "----------------------------\n";
-	RowEchlon(NoSolProblem, PivotColumnNum, PivotRowNum).print();
+		std::cout << "\n\n================================\n";
+		std::cout << "Test Case 2: No Solution\n";
+		std::cout << "================================\n";
+		NoSolProblem.print();
+		std::cout << "\nAfter Gaussian Elimination:\n";
+		std::cout << "----------------------------\n";
+		RowEchlon(NoSolProblem, 0, 0).print();
 
-	std::cout << "\n\n================================\n";
-	std::cout << "Test Case 3: Unique Solution\n";
-	std::cout << "================================\n";
-	UniqueSolProblem.print();
-	std::cout << "\nAfter Gaussian Elimination:\n";
-	std::cout << "----------------------------\n";
-	RowEchlon(UniqueSolProblem, PivotColumnNum, PivotRowNum).print();
+		std::cout << "\n\n================================\n";
+		std::cout << "Test Case 3: Unique Solution\n";
+		std::cout << "================================\n";
+		UniqueSolProblem.print();
+		std::cout << "\nAfter Gaussian Elimination:\n";
+		std::cout << "----------------------------\n";
+		RowEchlon(UniqueSolProblem, 0, 0).print();
 
-	std::cout << "\n\n================================\n";
-	std::cout << "Test Case 4: Zero Pivot\n";
-	std::cout << "================================\n";
-	zeroPivotProblem.print();
-	std::cout << "\nAfter Gaussian Elimination:\n";
-	std::cout << "----------------------------\n";
-	RowEchlon(InfManyproblem, PivotColumnNum, PivotRowNum).print();
+		std::cout << "\n\n================================\n";
+		std::cout << "Test Case 4: Zero Pivot\n";
+		std::cout << "================================\n";
+		zeroPivotProblem.print();
+		std::cout << "\nAfter Gaussian Elimination:\n";
+		std::cout << "----------------------------\n";
+		RowEchlon(InfManyproblem, 0, 0).print();
 
-	std::cout << "\n\n================================\n";
-	std::cout << "Test Case 5: Moving Right\n";
-	std::cout << "================================\n";
-	test2.print();
-	std::cout << "\nAfter Gaussian Elimination:\n";
-	std::cout << "----------------------------\n";
-	RowEchlon(test2, PivotColumnNum, PivotRowNum).print();
+		std::cout << "\n\n================================\n";
+		std::cout << "Test Case 5: Moving Right\n";
+		std::cout << "================================\n";
+		test2.print();
+		std::cout << "\nAfter Gaussian Elimination:\n";
+		std::cout << "----------------------------\n";
+		RowEchlon(test2, 0, 0).print();
 
-	std::cout << "\n================================\n";
+		std::cout << "\n================================\n";*/
 
-	// ---------------------------------------------------------------------------------------------------------------------------------------------
+		// ---------------------------------------------------------------------------------------------------------------------------------------------
 
 
 
-	//--------------------------MEASURING TIME OF EXCUTION----------------------------------
+		//--------------------------MEASURING TIME OF EXCUTION----------------------------------
 
+	auto start = std::chrono::high_resolution_clock::now();
+	for (int i = 0; i < 1000000; i++)
+		RowEchlon(test2, 0, 0);
 	auto end = std::chrono::high_resolution_clock::now();
+
+
+	//auto end = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 	std::cout << "Execution time: " << duration.count() << " milliseconds" << std::endl;
 }
